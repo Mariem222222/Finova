@@ -1,0 +1,54 @@
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navbar } from "@/widgets/layout";
+import routes from "@/routes";
+import { FinanceProvider } from "@/data/FinanceContext";
+import Dashboard from "./pages/Dashboard";
+import Sidebar from "./pages/Sidebar";
+import TransactionForm from "./data/TransactionForm";
+import TransactionsTable from "./data/TransactionsTable";
+import SavingsPlanning from "./pages/SavingsPlanning";
+import UserProfile from "./pages/UserProfile";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+function App() {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  // Check if the user is logged in (e.g., by checking for an auth token)
+  const isLoggedIn = !!localStorage.getItem("authToken");
+  return (
+    <FinanceProvider>
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        {isLoggedIn && <Sidebar onNavigate={(path) => navigate(path)} />}
+
+        {/* Main Content */}
+        <div className={`flex-1 overflow-auto ${isLoggedIn ? "" : "w-full"}`}>
+          {!(pathname === "/sign-in" || pathname === "/sign-up") && !isLoggedIn && (
+            <div className="container absolute left-2/4 z-10 mx-auto -translate-x-2/4 p-4">
+              <Navbar routes={routes.filter((route) => route.path !== "/register")} />
+            </div>
+          )}
+          <Routes>
+            {routes.map(
+              ({ path, element }, key) =>
+                element && <Route key={key} exact path={path} element={element} />
+            )}
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/add-transaction" element={<TransactionForm />} />
+            <Route path="/budget-tracking" element={<TransactionsTable />} />
+            <Route path="/savings-planning" element={<SavingsPlanning />} />
+            <Route path="/user-profile" element={<UserProfile />} />
+            {/* Default redirection to a valid route */}
+            <Route path="*" element={<Navigate to="/home" replace />} />
+          </Routes>
+        </div>
+      </div>
+      {/* Add ToastContainer */}
+      <ToastContainer />
+    </FinanceProvider>
+  );
+}
+
+export default App;
