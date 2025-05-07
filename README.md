@@ -35,50 +35,6 @@ Finova is a comprehensive personal finance management platform designed to help 
 - MongoDB
 - npm or yarn
 
-### Installation
-
-1. Clone the repository
-```bash
-git clone https://github.com/Mariem222222/Finova.git
-cd Finova
-```
-
-2. Install backend dependencies
-```bash
-cd backend
-npm install
-```
-
-3. Install frontend dependencies
-```bash
-cd ../frontend
-npm install
-```
-
-4. Create environment variables
-Create a `.env` file in the backend directory with the following variables:
-```
-MONGODB_URI=your_mongodb_uri
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-JWT_SECRET=your_jwt_secret
-PORT=5000
-```
-
-5. Start the development servers
-
-Backend:
-```bash
-cd backend
-npm run dev
-```
-
-Frontend:
-```bash
-cd frontend
-npm start
-```
-
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -88,6 +44,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 - Project Link: [https://github.com/Mariem222222/Finova](https://github.com/Mariem222222/Finova)
 
-## Acknowledgments
-- Thanks to all contributors who have helped shape Finova
-- Special thanks to the open-source community for the tools and libraries used in this project 
