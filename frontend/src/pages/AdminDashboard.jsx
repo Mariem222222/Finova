@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import axios from "axios"; // Import axios for API calls
 import { useFinance } from "@/data/FinanceContext";
 
 export default function AdminDashboard() {
@@ -7,45 +8,58 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeSessions: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
   });
   const [chartData, setChartData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-  
+
   useEffect(() => {
-    // This will be replaced with actual API calls when backend is connected
     const fetchDashboardData = async () => {
       try {
-        // Placeholder for future API calls
-        // const usersResponse = await fetch('/api/admin/users/count');
-        // const sessionsResponse = await fetch('/api/admin/sessions/active');
-        // const revenueResponse = await fetch('/api/admin/revenue/monthly');
-        
-        // const usersData = await usersResponse.json();
-        // const sessionsData = await sessionsResponse.json();
-        // const revenueData = await revenueResponse.json();
-        
-        // For now, initialize with zeros since we don't have backend data
-        setStats({
-          totalUsers: 0,
-          activeSessions: 0,
-          monthlyRevenue: 0
+        // Fetch total users
+        const usersResponse = await axios.get("http://localhost:5000/api/admin/users/count", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
         });
-        
-        // Initialize empty chart data with month structure
-        initializeEmptyChartData();
-        
-        // Initialize empty recent activity
-        setRecentActivity([]);
-        
+
+        // Fetch active sessions
+        const sessionsResponse = await axios.get("http://localhost:5000/api/admin/sessions/active", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
+
+        // Fetch monthly revenue
+        const revenueResponse = await axios.get("http://localhost:5000/api/admin/revenue/monthly", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
+
+        // Update stats
+        setStats({
+          totalUsers: usersResponse.data.totalUsers,
+          activeSessions: sessionsResponse.data.activeSessions,
+          monthlyRevenue: revenueResponse.data.monthlyRevenue,
+        });
+
+        // Fetch transactions for chart and recent activity
+        const transactionsResponse = await axios.get("http://localhost:5000/api/transactions", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
+
+        updateDashboardWithTransactions(transactionsResponse.data);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       }
     };
-    
+
     fetchDashboardData();
   }, []);
-  
+
   // Initialize empty chart data with all months
   const initializeEmptyChartData = () => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

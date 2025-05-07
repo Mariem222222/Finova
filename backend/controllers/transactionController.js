@@ -20,8 +20,12 @@ const addTransaction = async (req, res) => {
       userId: req.user.userId, // Use the userId from the token
     });
 
-    await transaction.save();
-    res.status(201).json({ message: "Transaction added successfully", transaction });
+    console.log("Transaction to be saved:", transaction); // Debug log
+
+    const savedTransaction = await transaction.save();
+    console.log("Transaction saved to database:", savedTransaction); // Debug log
+
+    res.status(201).json({ message: "Transaction added successfully", transaction: savedTransaction });
   } catch (error) {
     console.error("Error adding transaction:", error);
     res.status(500).json({ error: "Failed to add transaction", details: error.message });
@@ -30,14 +34,15 @@ const addTransaction = async (req, res) => {
 
 const getTransactions = async (req, res) => {
   try {
-    if (!req.user || !req.user.userId) {
+    const userId = req.user.userId; // Use userId from req.user
+    if (!userId) {
       console.error("User ID is missing in the request.");
       return res.status(401).json({ error: "Unauthorized: User not authenticated" });
     }
 
-    console.log("Fetching transactions for user ID:", req.user.userId); // Debug log
+    console.log("Fetching transactions for user ID:",userId); // Debug log
 
-    const transactions = await Transaction.find({ userId: req.user.userId }); // Use userId from req.user
+    const transactions = await Transaction.find({ userId}); // Use userId from req.user
     res.status(200).json(transactions);
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -46,3 +51,4 @@ const getTransactions = async (req, res) => {
 };
 
 module.exports = { addTransaction, getTransactions };
+

@@ -35,39 +35,107 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    console.log("Login request payload:", req.body); // Log the request payload
+    console.log("Login request payload:", req.body);
 
     const { email, password } = req.body;
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      console.log("User not found:", email); // Log if user is not found
+      console.log("User not found:", email);
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    console.log("User found:", user); // Log the user details
-    console.log("Plain text password received from frontend:", password); // Log the plain text password
-    console.log("Hashed password from database:", user.password); // Log the hashed password
+    console.log("User found:", user);
+    console.log("Plain text password received from frontend:", password);
+    console.log("Hashed password from database:", user.password);
 
     // Compare the plain text password with the hashed password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password comparison result:", isMatch); // Log the comparison result
+    console.log("Password comparison result:", isMatch);
 
     if (!isMatch) {
-      console.log("Login failed: Incorrect password for user:", email); // Log incorrect password
+      console.log("Login failed: Incorrect password for user:", email);
       return res.status(400).json({ message: "Mot de passe incorrect" });
     }
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    console.log("Login successful for user:", email); // Log successful login
+    // Generate JWT token with role
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+    console.log("Login successful for user:", email);
 
-    res.status(200).json({ token, user });
+    // Send user data without password
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profilePicture: user.profilePicture,
+      phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth
+    };
+
+    res.status(200).json({ token, user: userData });
   } catch (error) {
-    console.error("Error in login function:", error); // Log the error
+    console.error("Error in login function:", error);
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
 
-module.exports = { register, login };
+const updateUserProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, email, phoneNumber, dateOfBirth } = req.body;
+    const userId = req.user?.userId;
+    if (!userId) {
+      console.error("User ID is missing in the request.");
+      return res.status(401).json({ error: "Unauthorized: User not authenticated" });
+    }
+
+    const updateData = {
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      dateOfBirth,
+    };
+
+    if (req.file) {
+      updateData.profilePicture = `/uploads/${req.file.filename}`; // Save the file path to the database
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({ error: "Failed to update user profile" });
+  }
+};
+
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: User not authenticated" });
+    }
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch user profile" });
+  }
+};
+
+
+module.exports = { register, login, updateUserProfile, getUserProfile };

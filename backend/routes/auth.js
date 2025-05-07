@@ -3,15 +3,23 @@ const router = express.Router();
 const passport = require("passport");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken"); // Import jsonwebtoken
+const bcrypt = require("bcryptjs");
 require("dotenv").config(); // Load environment variables
 const { register, login } = require("../controllers/authController");
 const { sendEmail } = require("../services/email.service");
+const User = require("../models/User");
 
 // Mock function to generate a 2FA code
 const generate2FACode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Mock function to generate a reset code
+const generateResetCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
 // Mock database for storing 2FA codes temporarily
 const twoFactorCodes = {};
+
+// Store reset codes temporarily (in production, use Redis or similar)
+const resetCodes = {};
 
 // Configure nodemailer using environment variables
 const transporter = nodemailer.createTransport({
@@ -87,7 +95,7 @@ router.post("/send-2fa", async (req, res) => {
         'Feedback-ID': `2fa:${process.env.EMAIL_ID}`
       }
     });
-    
+
     console.log("Security verification code sent to:", email);
 
     res.status(200).json({ message: "2FA code sent to email" });
@@ -129,6 +137,82 @@ router.post("/send-verification", (req, res) => {
   setTimeout(() => {
     res.status(200).json({ message: "Verification email sent successfully" });
   }, 1000);
+});
+
+// Route to handle forgot password
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate reset code
+    const code = generateResetCode();
+    resetCodes[email] = {
+      code,
+      expires: Date.now() + 10 * 60 * 1000 // 10 minutes
+    };
+
+    // Send email with reset code
+    await transporter.sendMail({
+      from: `"${process.env.COMPANY_NAME}" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset Code",
+      text: `Your password reset code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this message.`,
+    });
+
+    res.status(200).json({ message: "Reset code sent successfully" });
+  } catch (error) {
+    console.error("Error in forgot password:", error);
+    res.status(500).json({ message: "Failed to send reset code" });
+  }
+});
+
+// Route to handle password reset
+router.post("/reset-password", async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    // Check if reset code exists and is valid
+    const resetData = resetCodes[email];
+    if (!resetData || resetData.code !== code || Date.now() > resetData.expires) {
+      return res.status(400).json({ message: "Invalid or expired reset code" });
+    }
+
+    // Find user and update password
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user's password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Remove used reset code
+    delete resetCodes[email];
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("Error in reset password:", error);
+    res.status(500).json({ message: "Failed to reset password" });
+  }
 });
 
 // Delegate login and register routes to controller functions

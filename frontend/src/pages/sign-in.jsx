@@ -31,97 +31,94 @@ export function SignIn() {
     if (!validateForm()) return;
 
     try {
-      console.log("Password being sent from frontend:", password); // Log the password
       const response = await axios.post("http://localhost:5000/api/auth/login", {
         email,
         password,
       });
-      console.log("Login response:", response.data); // Log the response
 
-      const { token, userId } = response.data;
+      const { token, user } = response.data;
+
+      // Store auth token and user role
       localStorage.setItem("authToken", token);
-      localStorage.setItem("userId", userId);
-      toast.success("Sign In successful! Redirecting to Dashboard...");
-      navigate("/dashboard");
+      localStorage.setItem("userRole", user.role);
+
+      toast.success("Sign In successful! Redirecting...");
+
+      // Redirect based on user role
+      if (user.role === "admin") {
+        navigate("/admin-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      console.error("Login error:", err.response?.data || err.message); // Log the error
-      toast.error(err.response?.data?.error || "Authentication failed. Please try again.");
+      console.error("Login error:", err.response?.data || err.message);
+      toast.error(err.response?.data?.message || "Authentication failed. Please try again.");
     }
   };
 
   return (
-    <section className="m-8 flex gap-4">
-      <div className="w-full lg:w-3/5 mt-24">
-        <div className="text-center">
-          <Typography variant="h2" className="font-bold mb-4">Sign In</Typography>
-          <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">
-            Enter your email and password to Sign In.
-          </Typography>
-        </div>
-        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSignIn}>
-          <div className="mb-1 flex flex-col gap-6">
-            <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-              Your email
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Left: Form */}
+      <div className="flex flex-1 flex-col justify-center items-center px-8 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+          <Typography variant="h2" className="font-bold mb-4">Welcome Back!</Typography>
+            <Typography color="gray" className="font-normal">
+              Enter your email and password to sign in
             </Typography>
-            <Input
-              size="lg"
-              placeholder="name@mail.com"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
-              Password
-            </Typography>
-            <Input
-              type="password"
-              size="lg"
-              placeholder="********"
-              className="!border-t-blue-gray-200 focus:!border-t-gray-900"
-              labelProps={{
-                className: "before:content-none after:content-none",
-              }}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
           </div>
-          <Checkbox
-            label={
+          <form className="mt-8 space-y-6" onSubmit={handleSignIn}>
+            <div className="space-y-4">
+              <Input
+                type="email"
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Checkbox label="Remember me" />
               <Typography
+                as={Link}
+                to="/forgot-password"
                 variant="small"
-                color="gray"
-                className="flex items-center justify-start font-medium"
+                color="blue"
+                className="ml-auto font-normal"
               >
-                I agree to the&nbsp;
-                <a
-                  href="#"
-                  className="font-normal text-black transition-colors hover:text-gray-900 underline"
-                >
-                  Terms and Conditions
-                </a>
+                Forgot password?
               </Typography>
-            }
-            containerProps={{ className: "-ml-2.5" }}
+            </div>
+            <Button type="submit" className="w-full" fullWidth>
+              Sign In
+            </Button>
+            <Typography color="gray" className="mt-4 text-center font-normal">
+              Don't have an account?{" "}
+              <Link to="/sign-up" className="font-medium text-blue-500">
+                Sign Up
+              </Link>
+            </Typography>
+          </form>
+        </div>
+      </div>
+      {/* Right: Image (hidden on mobile) */}
+      <div className="hidden md:flex flex-1 items-center justify-center bg-gray-50">
+        <div className="max-w-xs w-full">
+          <img
+            src="/img/pattern2.png" // Use your image here
+            alt="App Preview"
+            className="h-full rounded-3xl shadow-3xl"
           />
-          <Button className="mt-6" fullWidth type="submit">
-            Sign in
-          </Button>
-          <Typography variant="paragraph" className="text-center text-blue-gray-500 font-medium mt-4">
-            Not registered?
-            <Link to="/sign-up" className="text-gray-900 ml-1">Create account</Link>
-          </Typography>
-        </form>
+        </div>
       </div>
-      <div className="w-1/5 h-full hidden lg:block">
-        <img
-          src="/img/pattern1.png"
-          className="h-full w-full object-cover rounded-3xl"
-        />
-      </div>
-    </section>
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // Use axios for API calls
 import { Search, Edit, Trash, ChevronDown, ChevronUp, Filter, Download, Eye, Ban, Shield, AlertTriangle } from "lucide-react";
 import { useFinance } from "@/data/FinanceContext";
 
@@ -14,33 +15,37 @@ export default function UserSettings() {
     total: 0,
     active: 0,
     inactive: 0,
-    flagged: 0
+    flagged: 0,
   });
-  
+
   // Load user data from backend
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/users'); // Replace with your backend endpoint
-        const data = await response.json();
+        const response = await axios.get('http://localhost:5000/api/users', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+        });
+        const data = response.data;
         setUsers(data);
         setFilteredUsers(data);
 
         // Update stats based on fetched data
         setUserStats({
           total: data.length,
-          active: data.filter(u => u.status === 'active').length,
-          inactive: data.filter(u => u.status === 'inactive').length,
-          flagged: data.filter(u => u.flags && u.flags.length > 0).length
+          active: data.filter((u) => u.status === 'active').length,
+          inactive: data.filter((u) => u.status === 'inactive').length,
+          flagged: data.filter((u) => u.flags && u.flags.length > 0).length,
         });
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error('Error fetching users:', error);
       }
     };
 
     fetchUsers();
   }, []);
-  
+
   // Search and filter users
   useEffect(() => {
     let result = [...users];
@@ -100,24 +105,35 @@ export default function UserSettings() {
   };
   
   // Handle user status change
-  const handleStatusChange = (userId, newStatus) => {
-    // In the future, this will make an API call to update user status
-    const updatedUsers = users.map(user => {
-      if (user.id === userId) {
-        return { ...user, status: newStatus };
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/users/${userId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+        }
+      );
+
+      const updatedUser = response.data;
+      const updatedUsers = users.map((user) =>
+        user.id === userId ? { ...user, status: updatedUser.status } : user
+      );
+
+      setUsers(updatedUsers);
+
+      // Update selected user if needed
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({ ...selectedUser, status: updatedUser.status });
       }
-      return user;
-    });
-    
-    setUsers(updatedUsers);
-    
-    // Update selected user if needed
-    if (selectedUser && selectedUser.id === userId) {
-      setSelectedUser({ ...selectedUser, status: newStatus });
+
+      // Update stats
+      updateUserStats(updatedUsers);
+    } catch (error) {
+      console.error('Error updating user status:', error);
     }
-    
-    // Update stats
-    updateUserStats(updatedUsers);
   };
   
   // Update user statistics based on current users
@@ -131,18 +147,27 @@ export default function UserSettings() {
   };
   
   // Handle user deletion
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      // In the future, this will make an API call to delete the user
-      const updatedUsers = users.filter(user => user.id !== userId);
-      setUsers(updatedUsers);
-      
-      if (selectedUser && selectedUser.id === userId) {
-        setSelectedUser(null);
+      try {
+        await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+        });
+
+        const updatedUsers = users.filter((user) => user.id !== userId);
+        setUsers(updatedUsers);
+
+        if (selectedUser && selectedUser.id === userId) {
+          setSelectedUser(null);
+        }
+
+        // Update stats
+        updateUserStats(updatedUsers);
+      } catch (error) {
+        console.error('Error deleting user:', error);
       }
-      
-      // Update stats
-      updateUserStats(updatedUsers);
     }
   };
   

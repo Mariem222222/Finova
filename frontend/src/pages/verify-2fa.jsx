@@ -21,8 +21,8 @@ export function Verify2FA() {
       const response = await axios.post("http://localhost:5000/api/auth/verify-2fa", { email, code });
       // const { token } = response.data;
       // localStorage.setItem("authToken", token);
-      // toast.success("Verification successful! Redirecting to dashboard...");
-      navigate("/register");
+      toast.success("Verification successful! Redirecting to registration...");
+      navigate(`/register?email=${encodeURIComponent(email)}`);
     } catch (error) {
       toast.error(error.response?.data?.error || "Invalid or expired code. Please try again.");
     }
@@ -42,7 +42,7 @@ export function Verify2FA() {
             {[...Array(6)].map((_, index) => (
               <Input
                 key={index}
-                type="text"
+                type="number"
                 maxLength="1"
                 className="w-12 text-center text-lg"
                 value={code[index] || ""}

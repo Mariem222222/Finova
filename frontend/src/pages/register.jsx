@@ -35,7 +35,7 @@ export function Register() {
       toast.error("First name is required.");
       return false;
     }
-    if (!/^[A-Za-z]+$/.test(formData.firstName)) {
+    if (!/^[A-Za-z\s]+$/.test(formData.firstName)) {
       toast.error("First name must contain only alphabets.");
       return false;
     }
@@ -43,7 +43,7 @@ export function Register() {
       toast.error("Last name is required.");
       return false;
     }
-    if (!/^[A-Za-z]+$/.test(formData.lastName)) {
+    if (!/^[A-Za-z\s]+$/.test(formData.lastName)) {
       toast.error("Last name must contain only alphabets.");
       return false;
     }
@@ -154,8 +154,8 @@ export function Register() {
           </Typography>
         </form>
       </div>
-      <div className="w-1/5 h-full hidden lg:block">
-        <img src="/img/pattern1.png" className="h-full w-full object-cover rounded-3xl" />
+      <div className="w1/5 h-full hidden lg:block">
+        <img src="/img/pattern1.png" className="h-full rounded-3xl shadow-3xl" />
       </div>
     </section>
   );

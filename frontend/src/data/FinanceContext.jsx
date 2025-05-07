@@ -1,87 +1,75 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
+// In FinanceContext.js
+import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const FinanceContext = createContext();
 
 export function FinanceProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
-  const [budgets, setBudgets] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [budgetAlerts, setBudgetAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load initial data
+  // Fetch transactions from backend API on mount
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
+    const fetchTransactions = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const [txRes, budgetRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/transactions", {
-            headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
-          }),
-        ]);
-        setTransactions(txRes.data);
-      } catch (error) {
-        console.error("Loading error:", error);
+        const token = localStorage.getItem('authToken');
+        if (!token) throw new Error('No auth token');
+        const res = await axios.get('http://localhost:5000/api/transactions', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTransactions(res.data);
+        localStorage.setItem('transactions', JSON.stringify(res.data));
+      } catch (e) {
+        setError(e.message || 'Failed to fetch transactions');
+        // fallback: try to load from localStorage
+        const savedTransactions = localStorage.getItem('transactions');
+        if (savedTransactions) {
+          try {
+            setTransactions(JSON.parse(savedTransactions));
+          } catch (err) {
+            setTransactions([]);
+          }
+        } else {
+          setTransactions([]);
+        }
+      } finally {
+        setLoading(false);
       }
-      setIsLoading(false);
     };
-    loadData();
+    fetchTransactions();
   }, []);
 
-  // Budget check logic
-  const checkBudgetLimits = (newTransaction) => {
-    if (newTransaction.type !== "expense") return;
+  // Save transactions to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
-    const updatedBudgets = budgets.map((budget) => {
-      if (budget.category === newTransaction.category) {
-        const newSpent = budget.spent + newTransaction.amount;
-        const isExceeded = newSpent > budget.limit;
-
-        if (isExceeded) {
-          setBudgetAlerts((prev) => [
-            ...prev,
-            {
-              category: budget.category,
-              exceededBy: newSpent - budget.limit,
-              period: budget.period,
-            },
-          ]);
-        }
-
-        return { ...budget, spent: newSpent };
-      }
-      return budget;
-    });
-
-    setBudgets(updatedBudgets);
+  const addTransaction = (transaction) => {
+    // Ensure each transaction has a unique ID
+    const newTransaction = { ...transaction, id: Date.now() };
+    setTransactions([...transactions, newTransaction]);
   };
 
-  const addTransaction = async (transaction) => {
-    try {
-      const response = await axios.post("http://localhost:5000/api/transactions", transaction, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
-      });
-      setTransactions((prev) => [...prev, response.data]);
-      checkBudgetLimits(response.data);
-    } catch (error) {
-      console.error("Transaction error:", error);
-    }
+  const deleteTransaction = (id) => {
+    setTransactions(transactions.filter(transaction => transaction.id !== id));
   };
 
   return (
-    <FinanceContext.Provider
-      value={{
-        transactions,
-        budgets,
-        isLoading,
-        budgetAlerts,
-        addTransaction,
-        setBudgets,
-      }}
-    >
+    <FinanceContext.Provider value={{
+      transactions,
+      addTransaction,
+      deleteTransaction,
+      loading,
+      error
+    }}>
       {children}
     </FinanceContext.Provider>
   );
 }
 
-export const useFinance = () => useContext(FinanceContext);
+export function useFinance() {
+  return useContext(FinanceContext);
+}

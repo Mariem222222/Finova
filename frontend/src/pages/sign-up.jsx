@@ -26,7 +26,7 @@ export function SignUp() {
     }
 
     try {
-      // Simulate sending a 2FA code 
+      // Simulate sending a 2FA code (replace with actual API call if needed)
       await axios.post("http://localhost:5000/api/auth/send-2fa", { email });
       toast.success("Verification code sent! Redirecting to verification page...");
       navigate(`/verify-2fa?email=${encodeURIComponent(email)}`);
@@ -69,7 +69,7 @@ export function SignUp() {
       <div className="w-1/5 h-full hidden lg:block">
         <img
           src="/img/pattern1.png"
-          className="h-full w-full object-cover rounded-3xl"
+          className="h-full rounded-3xl shadow-3xl"
         />
       </div>
     </section>

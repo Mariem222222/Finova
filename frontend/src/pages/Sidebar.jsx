@@ -109,7 +109,7 @@ export default function Sidebar({ onNavigate }) {
             ${isCollapsed ? 'text-sm' : 'text-2xl'}
           `}
         >
-          {isCollapsed ? 'SPP' : 'Smart Personal Portfolio'}
+          {isCollapsed ? 'F' : 'Finova'}
         </h1>
       </div>
 

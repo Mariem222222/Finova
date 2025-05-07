@@ -8,6 +8,8 @@ import TransactionForm from "./data/TransactionForm";
 import TransactionsTable from "./data/TransactionsTable";
 import SavingsPlanning from "./pages/SavingsPlanning";
 import UserProfile from "./pages/UserProfile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -25,9 +27,9 @@ function App() {
 
         {/* Main Content */}
         <div className={`flex-1 overflow-auto ${isLoggedIn ? "" : "w-full"}`}>
-          {!(pathname === "/sign-in" || pathname === "/sign-up") && !isLoggedIn && (
+          {!(pathname === "/sign-in" || pathname === "/sign-up" || pathname === "/forgot-password" || pathname === "/reset-password") && !isLoggedIn && (
             <div className="container absolute left-2/4 z-10 mx-auto -translate-x-2/4 p-4">
-              <Navbar routes={routes.filter((route) => route.path !== "/register")} />
+              <Navbar routes={routes.filter((route) => route.path !== "/register" && route.path !== "/verify-2fa")} />
             </div>
           )}
           <Routes>
@@ -40,6 +42,8 @@ function App() {
             <Route path="/budget-tracking" element={<TransactionsTable />} />
             <Route path="/savings-planning" element={<SavingsPlanning />} />
             <Route path="/user-profile" element={<UserProfile />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Default redirection to a valid route */}
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>

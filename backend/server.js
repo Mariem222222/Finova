@@ -11,12 +11,23 @@ dotenv.config(); // Charger les variables d'environnement depuis le fichier .env
 const authRoutes = require("./routes/auth"); // Import auth routes
 const transactionRoutes = require("./routes/transactionRoutes"); // Import transaction routes
 const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes"); // Import admin routes
+const chatbotRoutes = require("./routes/chatbotRoutes"); // Import chatbot routes
+const recommendationRoutes = require("./routes/recommendationRoutes"); // Import recommendation routes
+const savingsGoalRoutes = require("./routes/savingsGoalRoutes"); // Import savings goal routes
 const fs = require("fs");
 const path = require("path");
+const cron = require("./cron"); // Import cron
+notificatinService = require("./utils/notificationService"); // Import notification service
+const { checkGoalProgressAndNotify } = require("./utils/notificationService"); // Import notification service
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ API KEY MANQUANTE DANS .env !");
+  process.exit(1);
+}
 // Activer CORS pour toutes les routes
 app.use(cors());
 
@@ -107,7 +118,22 @@ app.use("/api/send-verification", authRoutes); // Register new auth route
 app.use("/api/transactions", transactionRoutes); // Ensure this is correctly registered
 
 // Register user routes
-app.use("/api/users", userRoutes);
+app.use("/api/users", userRoutes); // Ensure this matches the frontend API call
+
+// Register admin routes
+app.use("/api/admin", adminRoutes); // Register new admin route
+
+// Register chatbot routes
+app.use("/api/chatbot", chatbotRoutes);
+
+// Register recommendation routes
+app.use("/api", recommendationRoutes); // Register recommendation routes
+
+// Register savings goal routes
+app.use("/api/savings-goals", savingsGoalRoutes); // Register savings goal routes
+
+// Servir le dossier uploads en statique
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware pour gérer les routes non trouvées
 app.use((req, res) => {
